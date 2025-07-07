@@ -180,17 +180,31 @@ const Sales = () => {
       })),
     };
 
-    if (editId) {
-      await axios.put(
-        `${import.meta.env.VITE_API_URL}/sales/${editId}`,
-        saleData
-      );
-      setEditId(null);
-    } else {
-      await axios.post(`${import.meta.env.VITE_API_URL}/sales`, saleData);
+    try {
+      let res;
+      if (editId) {
+        res = await axios.put(
+          `${import.meta.env.VITE_API_URL}/sales/${editId}`,
+          saleData
+        );
+        setEditId(null);
+      } else {
+        res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/sales`,
+          saleData
+        );
+      }
+
+      resetForm();
+      fetchSales();
+
+      // ✅ Pass the actual sale data to the print function
+      if (res?.data) {
+        handlePrintReceipt(res.data);
+      }
+    } catch (err) {
+      console.error("Error saving sale:", err);
     }
-    resetForm();
-    fetchSales();
   };
 
   const handleEdit = (sale) => {
@@ -261,78 +275,105 @@ const Sales = () => {
   <html>
     <head>
       <title>Receipt</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
       <style>
-          @media print {
+        @media print {
           @page {
-            size: 3.5in 4in;
+            size: 80mm auto;
             margin: 0;
           }
+          body {
+            margin: 0;
+          }
+        }
+
         body {
-          font-family: monospace;
+          font-family: 'Arial', sans-serif;
           width: 80mm;
+          margin: 0;
           padding: 0;
-          margin: 0;
-          font-size: 12px;
+          font-size: 11px;
         }
+
         .container {
-          padding: 10px;
+          padding: 8px 10px;
         }
-        h2, h4, .center {
+
+        .brand {
+          font-family: 'Cinzel', serif;
+          font-size: 22px;
           text-align: center;
-          margin: 0;
+          letter-spacing: 2px;
+          font-weight: bold;
+          color: #111;
+          text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+          margin-bottom: 2px;
         }
-        h2 {
-          font-size: 16px;
+
+        .contact {
+          text-align: center;
+          font-size: 10px;
+          margin-bottom: 6px;
         }
-        h4 {
-          font-size: 12px;
-          margin-top: 2px;
-        }
-        .center {
-          margin-top: 4px;
-        }
+
         hr {
           border: none;
-          border-top: 1px dashed #000;
-          margin: 6px 0;
+          border-top: 1px dashed #333;
+          margin: 5px 0;
         }
+
         table {
           width: 100%;
-          margin-top: 6px;
+          margin-top: 4px;
         }
+
         th, td {
+          font-size: 11px;
+          padding: 2px 0;
+        }
+
+        td {
+          vertical-align: top;
+        }
+
+        th {
           text-align: left;
-          font-size: 12px;
-          padding: 4px 0;
         }
-        .totals {
-          margin-top: 10px;
-        }
+
         .totals p {
           margin: 2px 0;
           display: flex;
           justify-content: space-between;
         }
+
         .footer {
           text-align: center;
-          margin-top: 10px;
-          font-size: 11px;
+          margin-top: 8px;
+          font-size: 10px;
+        }
+
+        .label {
+          font-weight: bold;
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <h2>Cielo Noir</h2>
-        <h4>Plot #60, 15 Bank Rd, Saddar, Rawalpindi</h4>
-        <div class="center">03285105601</div>
+        <div class="brand">Cielo Noir</div>
+        <div class="contact">Plot #60, 15 Bank Rd, Saddar, Rawalpindi</div>
+        <div class="contact">📞 03285105601</div>
         <hr />
-        <div><strong>Date:</strong> ${new Date(
+        <div><span class="label">Date:</span> ${new Date(
           sale.createdAt
         ).toLocaleString()}</div>
-        <div><strong>Customer:</strong> ${sale.customer || "N/A"}</div>
-        <div><strong>Phone:</strong> ${sale.customerphone || "N/A"}</div>
-        <div><strong>Cashier:</strong> ${sale.cashier || "N/A"}</div>
-        <div><strong>Invoice #:</strong> ${sale._id}</div>
+        <div><span class="label">Customer:</span> ${
+          sale.customer || "N/A"
+        }</div>
+        <div><span class="label">Phone:</span> ${
+          sale.customerphone || "N/A"
+        }</div>
+        <div><span class="label">Cashier:</span> ${sale.cashier || "N/A"}</div>
+        <div><span class="label">Invoice #:</span> ${sale._id}</div>
         <hr />
         <table>
           <thead>
@@ -365,9 +406,9 @@ const Sales = () => {
           <p><span>Discount:</span><span>Rs ${(sale.discount || 0).toFixed(
             2
           )}</span></p>
-          <p><strong><span>Grand Total:</span><span>Rs ${sale.grandTotal.toFixed(
+          <p><span class="label">Grand Total:</span><span><strong>Rs ${sale.grandTotal.toFixed(
             2
-          )}</span></strong></p>
+          )}</strong></span></p>
           <p><span>Paid:</span><span>Rs ${sale.paid.toFixed(2)}</span></p>
           <p><span>Return:</span><span>Rs ${(
             sale.paid - sale.grandTotal
@@ -376,7 +417,7 @@ const Sales = () => {
         <hr />
         <div class="footer">
           <p>Thank you for shopping. Come Again!</p>
-          <p>https://www.lwizsol.com</p>
+          <p>www.lwizsol.com</p>
           <p>Exchange within 7 days with receipt</p>
         </div>
       </div>
