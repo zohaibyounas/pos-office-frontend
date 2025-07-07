@@ -240,17 +240,20 @@ const Sales = () => {
   };
 
   const resetForm = () => {
+    const user = localStorage.getItem("user");
+    const parsedUser = user ? JSON.parse(user) : {}; // ✅ declare parsedUser
+
     setForm({
       customer: "",
       customerphone: "", // Added customerphone field
       warehouse: "",
-      status: "Pending",
-      paymentStatus: "Unpaid",
+      status: "Completed",
+      paymentStatus: "Paid",
       paymentType: "Cash",
       grandTotal: 0,
       paid: 0,
       discount: 0,
-      cashier: "",
+      cashier: parsedUser.email || "", // ✅ safely use it
     });
     setSelectedProducts([]);
     setEditId(null);
@@ -277,85 +280,88 @@ const Sales = () => {
       <title>Receipt</title>
       <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
       <style>
-        @media print {
-          @page {
-            size: 80mm auto;
-            margin: 0;
-          }
-          body {
-            margin: 0;
-          }
-        }
+  @media print {
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+    html, body {
+      width: 80mm;
+      margin: 0;
+      padding: 0;
+    }
+  }
 
-        body {
-          font-family: 'Arial', sans-serif;
-          width: 80mm;
-          margin: 0;
-          padding: 0;
-          font-size: 11px;
-        }
+  body {
+    font-family: 'Arial', sans-serif;
+    width: 80mm;
+    margin: 0;
+    padding: 0;
+    font-size: 11px;
+  }
 
-        .container {
-          padding: 8px 10px;
-        }
+  .container {
+    padding: 8px 10px;
+  }
 
-        .brand {
-          font-family: 'Cinzel', serif;
-          font-size: 22px;
-          text-align: center;
-          letter-spacing: 2px;
-          font-weight: bold;
-          color: #111;
-          text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
-          margin-bottom: 2px;
-        }
+  .brand {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    text-align: center;
+    letter-spacing: 2px;
+    font-weight: bold;
+    color: #111;
+    text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+    margin-bottom: 2px;
+  }
 
-        .contact {
-          text-align: center;
-          font-size: 10px;
-          margin-bottom: 6px;
-        }
+  .contact {
+    text-align: center;
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
 
-        hr {
-          border: none;
-          border-top: 1px dashed #333;
-          margin: 5px 0;
-        }
+  hr {
+    border: none;
+    border-top: 1px dashed #333;
+    margin: 5px 0;
+  }
 
-        table {
-          width: 100%;
-          margin-top: 4px;
-        }
+  table {
+    width: 100%;
+    margin-top: 4px;
+  }
 
-        th, td {
-          font-size: 11px;
-          padding: 2px 0;
-        }
+  th, td {
+    font-size: 11px;
+    padding: 2px 0;
+  }
 
-        td {
-          vertical-align: top;
-        }
+  td {
+    vertical-align: top;
+  }
 
-        th {
-          text-align: left;
-        }
+  th {
+    text-align: left;
+  }
 
-        .totals p {
-          margin: 2px 0;
-          display: flex;
-          justify-content: space-between;
-        }
+  .totals p {
+    margin: 2px 0;
+    display: flex;
+    justify-content: space-between;
+  }
 
-        .footer {
-          text-align: center;
-          margin-top: 8px;
-          font-size: 10px;
-        }
+  .footer {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 10px;
+  }
 
-        .label {
-          font-weight: bold;
-        }
-      </style>
+  .label {
+    font-weight: bold;
+  }
+</style>
+
     </head>
     <body>
       <div class="container">
@@ -660,8 +666,8 @@ const Sales = () => {
               onChange={(e) => setForm({ ...form, status: e.target.value })}
               className="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option>Pending</option>
               <option>Completed</option>
+              <option>Pending</option>
               <option>Cancelled</option>
             </select>
           </div>
