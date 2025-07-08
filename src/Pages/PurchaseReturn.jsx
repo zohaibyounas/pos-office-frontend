@@ -58,7 +58,7 @@ const PurchaseReturn = () => {
       );
     } else {
       await axios.post(
-        "${import.meta.env.VITE_API_URL}/purchase-returns",
+        `${import.meta.env.VITE_API_URL}/purchase-returns`,
         returnData
       );
     }

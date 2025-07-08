@@ -32,6 +32,9 @@ const Sales = () => {
   // Add barcode scanner state
   const [barcodeInput, setBarcodeInput] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, paid: prev.grandTotal }));
+  }, [form.grandTotal]);
 
   useEffect(() => {
     const user = localStorage.getItem("user");

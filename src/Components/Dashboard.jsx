@@ -21,32 +21,49 @@ import {
   FaUndo,
   FaExchangeAlt,
   FaCalendarDay,
-  FaMoneyCheckAlt,
-  FaCashRegister,
-  FaMinusCircle,
   FaChartLine,
   FaPercentage,
 } from "react-icons/fa";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Dashboard = () => {
   const [totalSales, setTotalSales] = useState(0);
   const [totalPurchases, setTotalPurchases] = useState(0);
   const [totalPurchaseReturns, setTotalPurchaseReturns] = useState(0);
   const [todaySales, setTodaySales] = useState(0);
-  // eslint-disable-next-line no-unused-vars
   const [todayPurchases, setTodayPurchases] = useState(0);
   const [totalRefund, setTotalRefund] = useState(0);
   const [barData, setBarData] = useState([]);
 
-  // New profit metrics
+  // Profit metrics
   const [totalProfit, setTotalProfit] = useState(0);
   const [todayProfit, setTodayProfit] = useState(0);
   const [averageProfitMargin, setAverageProfitMargin] = useState(0);
   const [profitTrendData, setProfitTrendData] = useState([]);
 
+  // Monthly data state
+  const [monthlyTotals, setMonthlyTotals] = useState({
+    sales: 0,
+    purchases: 0,
+    profit: 0,
+  });
+
+  // Selected date state
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedMonthData, setSelectedMonthData] = useState({
+    sales: 0,
+    purchases: 0,
+    profit: 0,
+  });
+
   useEffect(() => {
     fetchTotals();
   }, []);
+
+  useEffect(() => {
+    if (selectedDate) fetchDataForSelectedMonth();
+  }, [selectedDate]);
 
   const fetchTotals = async () => {
     try {
@@ -62,11 +79,58 @@ const Dashboard = () => {
       const purchasesData = purchasesRes.data;
       const purchaseReturnsData = purchaseReturnsRes.data;
 
-      // Calculate profit metrics
+      /* ---------- current‑month totals ---------- */
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY‑MM
+      const monthlyData = {};
+
+      salesData.forEach((sale) => {
+        const date = new Date(sale.createdAt || sale.date);
+        const monthYear = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+        if (monthYear === currentMonth) {
+          monthlyData.sales =
+            (monthlyData.sales || 0) +
+            ((sale.grandTotal || 0) - (sale.totalRefundAmount || 0));
+          const total = sale.grandTotal || 0;
+          const refund = sale.totalRefundAmount || 0;
+          const profit = sale.netProfit || sale.totalProfit || 0;
+          const refundedProfit = total > 0 ? (refund / total) * profit : 0;
+
+          monthlyData.profit =
+            (monthlyData.profit || 0) + (profit - refundedProfit);
+        }
+      });
+
+      purchasesData.forEach((purchase) => {
+        const date = new Date(purchase.createdAt || purchase.date);
+        const monthYear = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+        if (monthYear === currentMonth) {
+          monthlyData.purchases =
+            (monthlyData.purchases || 0) + (purchase.grandTotal || 0);
+        }
+      });
+
+      setMonthlyTotals({
+        sales: monthlyData.sales || 0,
+        profit: monthlyData.profit || 0,
+        purchases: monthlyData.purchases || 0,
+      });
+
+      /* ---------- all‑time profit metrics ---------- */
       const profitData = salesData.reduce(
         (acc, sale) => {
-          acc.totalProfit += sale.netProfit || sale.totalProfit || 0;
-          acc.totalSales += (sale.grandTotal || 0) - (sale.refundAmount || 0);
+          const total = sale.grandTotal || 0;
+          const refund = sale.totalRefundAmount || 0;
+          const profit = sale.netProfit || sale.totalProfit || 0;
+          const refundedProfit = total > 0 ? (refund / total) * profit : 0;
+
+          acc.totalProfit += profit - refundedProfit;
+          acc.totalSales += total - refund;
           return acc;
         },
         { totalProfit: 0, totalSales: 0 }
@@ -75,12 +139,12 @@ const Dashboard = () => {
       setTotalProfit(profitData.totalProfit);
       setTotalSales(profitData.totalSales);
       setAverageProfitMargin(
-        profitData.totalSales > 0
+        profitData.totalSales
           ? (profitData.totalProfit / profitData.totalSales) * 100
           : 0
       );
 
-      // Today's calculations
+      /* ---------- today’s metrics ---------- */
       const today = new Date().toISOString().split("T")[0];
       const todayData = salesData
         .filter(
@@ -88,8 +152,14 @@ const Dashboard = () => {
         )
         .reduce(
           (acc, sale) => {
-            acc.todayProfit += sale.netProfit || sale.totalProfit || 0;
-            acc.todaySales += (sale.grandTotal || 0) - (sale.refundAmount || 0);
+            const total = sale.grandTotal || 0;
+            const refund = sale.totalRefundAmount || 0;
+            const profit = sale.netProfit || sale.totalProfit || 0;
+            const refundedProfit = total > 0 ? (refund / total) * profit : 0;
+
+            acc.todayProfit += profit - refundedProfit;
+            acc.todaySales += total - refund;
+
             return acc;
           },
           { todayProfit: 0, todaySales: 0 }
@@ -98,9 +168,9 @@ const Dashboard = () => {
       setTodaySales(todayData.todaySales);
       setTodayProfit(todayData.todayProfit);
 
-      // Other existing calculations
+      /* ---------- other aggregate values ---------- */
       const totalRefundSum = salesData.reduce(
-        (sum, s) => sum + (s.refundAmount || 0),
+        (sum, s) => sum + (s.totalRefundAmount || 0),
         0
       );
       const totalPurchaseReturnSum = purchaseReturnsData.reduce(
@@ -122,86 +192,154 @@ const Dashboard = () => {
           .reduce((sum, p) => sum + (p.grandTotal || 0), 0)
       );
 
-      // Enhanced chart data with profit
-      const groupedByDate = {};
+      /* ---------- bar‑chart data (last 6 months) ---------- */
+      const monthlyChartData = {};
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
 
       salesData.forEach((sale) => {
-        const date = sale.createdAt?.split("T")[0];
-        if (!groupedByDate[date]) {
-          groupedByDate[date] = {
-            date,
+        const date = new Date(sale.createdAt || sale.date);
+        if (date < sixMonthsAgo) return;
+
+        const monthYear = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+        if (!monthlyChartData[monthYear]) {
+          monthlyChartData[monthYear] = {
+            month: monthYear,
             Sales: 0,
             Purchases: 0,
-            Refunds: 0,
             Profit: 0,
-            PurchaseReturns: 0,
           };
         }
-        groupedByDate[date].Sales +=
-          (sale.grandTotal || 0) - (sale.refundAmount || 0);
-        groupedByDate[date].Refunds += sale.refundAmount || 0;
-        groupedByDate[date].Profit += sale.netProfit || sale.totalProfit || 0;
+
+        monthlyChartData[monthYear].Sales +=
+          (sale.grandTotal || 0) - (sale.totalRefundAmount || 0);
+        const total = sale.grandTotal || 0;
+        const refund = sale.totalRefundAmount || 0;
+        const profit = sale.netProfit || sale.totalProfit || 0;
+        const refundedProfit = total > 0 ? (refund / total) * profit : 0;
+
+        monthlyChartData[monthYear].Profit += profit - refundedProfit;
       });
 
       purchasesData.forEach((purchase) => {
-        const date = purchase.createdAt?.split("T")[0];
-        if (!groupedByDate[date]) {
-          groupedByDate[date] = {
-            date,
+        const date = new Date(purchase.createdAt || purchase.date);
+        if (date < sixMonthsAgo) return;
+
+        const monthYear = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+        if (!monthlyChartData[monthYear]) {
+          monthlyChartData[monthYear] = {
+            month: monthYear,
             Sales: 0,
             Purchases: 0,
-            Refunds: 0,
             Profit: 0,
-            PurchaseReturns: 0,
           };
         }
-        groupedByDate[date].Purchases += purchase.grandTotal || 0;
+
+        monthlyChartData[monthYear].Purchases += purchase.grandTotal || 0;
       });
 
-      purchaseReturnsData.forEach((ret) => {
-        const date = ret.createdAt?.split("T")[0];
-        if (!groupedByDate[date]) {
-          groupedByDate[date] = {
-            date,
-            Sales: 0,
-            Purchases: 0,
-            Refunds: 0,
-            Profit: 0,
-            PurchaseReturns: 0,
-          };
+      setBarData(
+        Object.values(monthlyChartData).sort((a, b) =>
+          a.month.localeCompare(b.month)
+        )
+      );
+
+      /* ---------- profit‑trend data ---------- */
+      const allMonthlyData = {};
+
+      salesData.forEach((sale) => {
+        const date = new Date(sale.createdAt || sale.date);
+        const monthYear = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+        if (!allMonthlyData[monthYear]) {
+          allMonthlyData[monthYear] = { month: monthYear, Profit: 0 };
         }
-        groupedByDate[date].PurchaseReturns += ret.total || 0;
+
+        allMonthlyData[monthYear].Profit +=
+          sale.netProfit || sale.totalProfit || 0;
       });
 
-      const chartData = Object.values(groupedByDate)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .slice(-7);
-
-      setBarData(chartData);
-
-      // Profit trend data for line chart
-      const profitTrend = Object.values(groupedByDate)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .map((item) => ({
-          date: item.date,
-          Profit: item.Profit,
-        }));
-      setProfitTrendData(profitTrend.slice(-30)); // Last 30 days
+      setProfitTrendData(
+        Object.values(allMonthlyData).sort((a, b) =>
+          a.month.localeCompare(b.month)
+        )
+      );
     } catch (err) {
       console.error("Error fetching totals:", err);
     }
   };
 
+  /* ---------- selected‑month fetch ---------- */
+  const fetchDataForSelectedMonth = async () => {
+    try {
+      const monthYear = `${selectedDate.getFullYear()}-${String(
+        selectedDate.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      const salesRes = await axios.get(`${import.meta.env.VITE_API_URL}/sales`);
+      const purchasesRes = await axios.get(
+        `${import.meta.env.VITE_API_URL}/purchases`
+      );
+
+      const salesData = salesRes.data;
+      const purchasesData = purchasesRes.data;
+
+      const selectedMonthTotals = { sales: 0, purchases: 0, profit: 0 };
+
+      salesData.forEach((sale) => {
+        const date = new Date(sale.createdAt || sale.date);
+        const saleMonthYear = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+        if (saleMonthYear === monthYear) {
+          selectedMonthTotals.sales +=
+            (sale.grandTotal || 0) - (sale.totalRefundAmount || 0);
+          const total = sale.grandTotal || 0;
+          const refund = sale.totalRefundAmount || 0;
+          const profit = sale.netProfit || sale.totalProfit || 0;
+          const refundedProfit = total > 0 ? (refund / total) * profit : 0;
+
+          selectedMonthTotals.profit += profit - refundedProfit;
+        }
+      });
+
+      purchasesData.forEach((purchase) => {
+        const date = new Date(purchase.createdAt || purchase.date);
+        const purchaseMonthYear = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+
+        if (purchaseMonthYear === monthYear) {
+          selectedMonthTotals.purchases += purchase.grandTotal || 0;
+        }
+      });
+
+      setSelectedMonthData(selectedMonthTotals);
+    } catch (err) {
+      console.error("Error fetching selected month data:", err);
+    }
+  };
+
+  /* ---------- summary cards config ---------- */
   const summaryCards = [
     {
-      title: "Total Sales",
-      value: `PKR ${totalSales.toLocaleString()}`,
+      title: "Total Sales (Selected Month)",
+      value: `PKR ${selectedMonthData.sales.toLocaleString()}`,
       color: "bg-violet-600",
       icon: <FaMoneyBillWave className="text-3xl" />,
     },
     {
-      title: "Total Profit",
-      value: `PKR ${totalProfit.toLocaleString()}`,
+      title: "Total Profit (Selected Month)",
+      value: `PKR ${selectedMonthData.profit.toLocaleString()}`,
       color: "bg-green-600",
       icon: <FaChartLine className="text-3xl" />,
     },
@@ -212,8 +350,8 @@ const Dashboard = () => {
       icon: <FaPercentage className="text-3xl" />,
     },
     {
-      title: "Total Purchases",
-      value: `PKR ${totalPurchases.toLocaleString()}`,
+      title: "Total Purchases (Selected Month)",
+      value: `PKR ${selectedMonthData.purchases.toLocaleString()}`,
       color: "bg-green-500",
       icon: <FaShoppingCart className="text-3xl" />,
     },
@@ -244,20 +382,30 @@ const Dashboard = () => {
   ];
 
   const pieData = [
-    { name: "Gross Profit", value: totalProfit, color: "#16a34a" },
-    { name: "Costs", value: totalPurchases - totalProfit, color: "#ef4444" },
+    { name: "Gross Profit", value: selectedMonthData.profit, color: "#16a34a" },
+    {
+      name: "Costs",
+      value: selectedMonthData.purchases - selectedMonthData.profit,
+      color: "#ef4444",
+    },
   ];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="flex-1 p-4 md:ml-24">
-        <div className="md:hidden flex justify-between items-center mb-4">
-          <h1 className="text-xl font-semibold">Dashboard</h1>
-          <button className="text-gray-700 text-2xl">
-            <FaBars />
-          </button>
+        {/* Month selector */}
+        <div className="mb-4 bg-white p-4 rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-2">Select Month</h2>
+          <DatePicker
+            selected={selectedDate}
+            onChange={(date) => setSelectedDate(date)}
+            dateFormat="MM/yyyy"
+            showMonthYearPicker
+            className="border rounded p-2 w-full"
+          />
         </div>
 
+        {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           {summaryCards.map((card, i) => (
             <div
@@ -273,14 +421,16 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          {/* Bar chart */}
           <div className="bg-white p-4 rounded-xl shadow">
             <h2 className="text-lg font-semibold mb-2">
-              Last 7 Days: Sales, Purchases & Profit
+              Last 6 Months: Sales, Purchases & Profit
             </h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={barData}>
-                <XAxis dataKey="date" />
+                <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -291,8 +441,11 @@ const Dashboard = () => {
             </ResponsiveContainer>
           </div>
 
+          {/* Pie chart */}
           <div className="bg-white p-4 rounded-xl shadow">
-            <h2 className="text-lg font-semibold mb-2">Profit Composition</h2>
+            <h2 className="text-lg font-semibold mb-2">
+              Monthly Profit Composition
+            </h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -307,7 +460,7 @@ const Dashboard = () => {
                   }
                 >
                   {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={index} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -318,11 +471,12 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Line chart */}
         <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-2">30-Day Profit Trend</h2>
+          <h2 className="text-lg font-semibold mb-2">Profit Trend (Monthly)</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={profitTrendData}>
-              <XAxis dataKey="date" />
+              <XAxis dataKey="month" />
               <YAxis />
               <Tooltip
                 formatter={(value) => [
