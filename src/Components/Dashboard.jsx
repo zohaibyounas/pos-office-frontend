@@ -49,12 +49,12 @@ const Dashboard = () => {
 
   const fetchTotals = async () => {
     try {
-      const salesRes = await axios.get("http://localhost:5000/api/sales");
+      const salesRes = await axios.get(`${import.meta.env.VITE_API_URL}/sales`);
       const purchasesRes = await axios.get(
-        "http://localhost:5000/api/purchases"
+        `${import.meta.env.VITE_API_URL}/purchases`
       );
       const purchaseReturnsRes = await axios.get(
-        "http://localhost:5000/api/purchase-returns"
+        `${import.meta.env.VITE_API_URL}/purchase-returns`
       );
 
       const salesData = salesRes.data;
