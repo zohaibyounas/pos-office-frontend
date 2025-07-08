@@ -13,7 +13,9 @@ function Product() {
   const [preview, setPreview] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [searchCode, setSearchCode] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [barcodeError, setBarcodeError] = useState("");
 
   const inputRef = useRef();
@@ -121,6 +123,7 @@ function Product() {
     return (priceNum - discountNum).toFixed(2);
   };
 
+  // eslint-disable-next-line no-unused-vars
   const fetchProductByBarcode = async (code) => {
     try {
       const res = await axios.get(`/api/products/barcode/${code}`);

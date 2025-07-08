@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [totalPurchases, setTotalPurchases] = useState(0);
   const [totalPurchaseReturns, setTotalPurchaseReturns] = useState(0);
   const [todaySales, setTodaySales] = useState(0);
+  // eslint-disable-next-line no-unused-vars
   const [todayPurchases, setTodayPurchases] = useState(0);
   const [totalRefund, setTotalRefund] = useState(0);
   const [barData, setBarData] = useState([]);

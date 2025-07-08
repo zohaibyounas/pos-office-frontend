@@ -4,12 +4,15 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Calculator } from "lucide-react";
+import Cal from "../Components/Cal";
 
 const Sales = () => {
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showPP, setShowPP] = useState(false);
+  const [showCal, setShowCal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -825,7 +828,9 @@ const Sales = () => {
           <h2 className="text-xl font-semibold text-gray-700 mb-2 md:mb-0">
             Sales Records
           </h2>
-          <div className="relative w-full md:w-64">
+
+          {/* Search Input */}
+          <div className="relative w-full md:w-64 mb-2 md:mb-0">
             <input
               type="text"
               placeholder="Search sales..."
@@ -848,13 +853,39 @@ const Sales = () => {
               />
             </svg>
           </div>
+
+          {/* Return Sale Button */}
           <button
             onClick={() => navigate("/sales-return")}
             className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-md text-white transition-colors"
           >
             Return Sale
           </button>
+
+          {/* Calculator Button */}
+          <button
+            onClick={() => setShowCal(true)}
+            className="ml-2 p-2 rounded-md bg-green-600 hover:bg-green-700 text-white"
+            title="Open Calculator"
+          >
+            <Calculator />
+          </button>
         </div>
+
+        {/* Calculator Modal */}
+        {showCal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg p-4 w-[320px] relative shadow-xl">
+              <button
+                onClick={() => setShowCal(false)}
+                className="absolute top-2 right-2 text-gray-600 hover:text-red-600 text-xl font-bold"
+              >
+                ×
+              </button>
+              <Cal />
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
