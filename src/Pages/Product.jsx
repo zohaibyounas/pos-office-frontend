@@ -174,11 +174,11 @@ function Product() {
         className="grid sm:grid-cols-2 gap-4 bg-white p-6 rounded-xl shadow-md mb-10"
       >
         {[
-          "name*",
-          "code*",
+          "name",
+          "code",
           "brand",
-          "price*",
-          "costPrice*",
+          "price",
+          "costPrice",
           "discount",
           "unit",
           "stock",
