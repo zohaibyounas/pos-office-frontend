@@ -146,7 +146,7 @@ function Product() {
       </h2>
 
       {/* Barcode input field */}
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <input
           ref={inputRef}
           type="text"
@@ -164,18 +164,18 @@ function Product() {
         {barcodeError && (
           <p className="text-red-500 mt-2 text-sm">{barcodeError}</p>
         )}
-      </div>
+      </div> */}
 
       <form
         onSubmit={handleSubmit}
         className="grid sm:grid-cols-2 gap-4 bg-white p-6 rounded-xl shadow-md mb-10"
       >
         {[
-          "name",
-          "code",
+          "name*",
+          "code*",
           "brand",
-          "price",
-          "costPrice",
+          "price*",
+          "costPrice*",
           "discount",
           "unit",
           "stock",
