@@ -3,11 +3,14 @@ import axios from "axios";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Sales = () => {
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [showPP, setShowPP] = useState(false);
+
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -144,7 +147,14 @@ const Sales = () => {
           totalPrice: product.price,
         },
       ]);
+
+      // ✅ Set discount from the product when first added
+      setForm((prev) => ({
+        ...prev,
+        discount: product.discount || 0,
+      }));
     }
+
     setProductSearch("");
   };
 
@@ -557,12 +567,30 @@ const Sales = () => {
                       className="p-2 flex justify-between items-center"
                     >
                       <div className="flex-1">
-                        <div>
-                          {product.name} ({product.code}) - Rs {product.price}
-                          {product.discount
-                            ? ` (Discount: Rs ${product.discount})`
-                            : ""}
+                        <div className="flex items-center space-x-2">
+                          <span>
+                            {product.name} ({product.code}) - Rs {product.price}
+                            {product.discount && (
+                              <>
+                                {" "}
+                                (Discount: Rs {product.discount}
+                                {showPP && ` | pp: Rs ${product.costPrice}`})
+                              </>
+                            )}
+                          </span>
+                          <button
+                            onClick={() => setShowPP((prev) => !prev)}
+                            className="text-blue-600 mt-1 focus:outline-none"
+                            title={
+                              showPP
+                                ? "Hide Purchase Price"
+                                : "Show Purchase Price"
+                            }
+                          >
+                            {showPP ? <FaEyeSlash /> : <FaEye />}
+                          </button>
                         </div>
+
                         <div className="flex items-center mt-1">
                           <button
                             onClick={() =>
