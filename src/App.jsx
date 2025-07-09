@@ -17,6 +17,7 @@ import Purchases from "./Pages/Purchases";
 import SalesReturn from "./Pages/SalesReturn";
 import PurchaseReturn from "./Pages/PurchaseReturn";
 import SalesReport from "./Pages/SalesReport";
+import Expenses from "./Pages/Expenses";
 
 const AppContent = () => {
   const location = useLocation();
@@ -56,6 +57,7 @@ const AppContent = () => {
             <Route path="/sales-return" element={<SalesReturn />} />
             <Route path="/purchase-return" element={<PurchaseReturn />} />
             <Route path="/reports" element={<SalesReport />} />
+            <Route path="/expenses" element={<Expenses />} />
           </Routes>
         </div>
       </div>
